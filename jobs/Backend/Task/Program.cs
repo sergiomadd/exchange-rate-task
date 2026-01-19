@@ -49,6 +49,7 @@ namespace ExchangeRateUpdater
                 .AddPolicyHandler(CnbHttpPolicies.RetryPolicy);
 
                 services.AddScoped<IExchangeRateSource>(sp => sp.GetRequiredService<CnbApiExchangeRateSource>());
+                services.AddTransient<IExchangeRateProvider, ExchangeRateProvider>();
             })
             .Build();
 
