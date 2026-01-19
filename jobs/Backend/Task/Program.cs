@@ -19,7 +19,7 @@ namespace ExchangeRateUpdater
 {
     public static class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             using var host = Host.CreateDefaultBuilder(args)
             .ConfigureAppConfiguration((context, config) =>
@@ -53,23 +53,40 @@ namespace ExchangeRateUpdater
             })
             .Build();
 
+            var loggerFactory = host.Services.GetRequiredService<ILoggerFactory>();
+            var logger = loggerFactory.CreateLogger("ExchangeRateUpdater");
+            logger.LogInformation("Getting lastest exchange rates...");
+
+            using var scope = host.Services.CreateScope();
+            var services = scope.ServiceProvider;
+            IExchangeRateProvider exchangeRateProvider = services.GetRequiredService<IExchangeRateProvider>();
+
             try
             {
-                var provider = new ExchangeRateProvider();
-                var rates = provider.GetExchangeRates(currencies);
+                IEnumerable<Currency> currencies = SupportedCurrencies.All;
+                IEnumerable<ExchangeRate> rates = await exchangeRateProvider.GetExchangeRates(currencies);
 
-                Console.WriteLine($"Successfully retrieved {rates.Count()} exchange rates:");
-                foreach (var rate in rates)
+                if (rates == null || rates.Count() <= 0)
                 {
-                    Console.WriteLine(rate.ToString());
+                    logger.LogWarning("No exchange rates were retrieved.");
+                }
+                else
+                {
+                    logger.LogInformation($"Successfully retrieved {rates.Count()} exchange rates:");
+                    foreach (ExchangeRate rate in rates)
+                    {
+                        logger.LogInformation(rate.ToString());
+                    }
                 }
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Could not retrieve exchange rates: '{e.Message}'.");
+                logger.LogError($"Could not retrieve exchange rates: {e.Message}");
             }
 
             Console.ReadLine();
+
+            await host.StopAsync();
         }
     }
 }
