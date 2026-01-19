@@ -47,6 +47,8 @@ namespace ExchangeRateUpdater
                     client.Timeout = TimeSpan.FromSeconds(10);
                 })
                 .AddPolicyHandler(CnbHttpPolicies.RetryPolicy);
+
+                services.AddScoped<IExchangeRateSource>(sp => sp.GetRequiredService<CnbApiExchangeRateSource>());
             })
             .Build();
 
