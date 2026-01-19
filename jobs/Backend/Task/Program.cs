@@ -2,6 +2,8 @@
 using ExchangeRateUpdater.Core.Entities;
 using ExchangeRateUpdater.Data;
 using ExchangeRateUpdater.Infrastructure.Options;
+using ExchangeRateUpdater.Infrastructure.Policies;
+using ExchangeRateUpdater.Infrastructure.Sources;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -33,6 +35,18 @@ namespace ExchangeRateUpdater
                 logging.ClearProviders();
                 logging.AddConfiguration(context.Configuration.GetSection("Logging"));
                 logging.AddConsole();
+            })
+            .ConfigureServices((context, services) =>
+            {
+                services.Configure<CnbApiOptions>(context.Configuration.GetSection("CnbApi"));
+
+                services.AddHttpClient<CnbApiExchangeRateSource>((sp, client) =>
+                {
+                    var options = sp.GetRequiredService<IOptions<CnbApiOptions>>().Value;
+                    client.BaseAddress = new Uri(options.BaseUrl);
+                    client.Timeout = TimeSpan.FromSeconds(10);
+                })
+                .AddPolicyHandler(CnbHttpPolicies.RetryPolicy);
             })
             .Build();
 
