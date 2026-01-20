@@ -32,7 +32,7 @@ namespace ExchangeRateUpdater.Application.Providers
             List<ExchangeRate> validRates = new List<ExchangeRate>();
 
             //Used foreach instead of linq to be able to log skipped invalid rates
-            foreach (ExchangeRateDTO exchangeRateDTO in rates.Where(dto => currencies.Any(c => c.Code == dto.CurrencyCode)))
+            foreach (ExchangeRateDTO exchangeRateDTO in rates.Where(dto => dto != null && currencies.Any(c => c.Code == dto.CurrencyCode)))
             {
                 //Skip rates where the currency equals the base currency
                 if (exchangeRateDTO.CurrencyCode == SupportedCurrencies.DefaultBaseCurrency.Code)
@@ -55,8 +55,7 @@ namespace ExchangeRateUpdater.Application.Providers
 
         private static bool IsExchangeRateDTOValid(ExchangeRateDTO exchangeRateDTO)
         {
-            return exchangeRateDTO != null 
-                && !string.IsNullOrWhiteSpace(exchangeRateDTO.CurrencyCode)
+            return !string.IsNullOrWhiteSpace(exchangeRateDTO.CurrencyCode)
                 && exchangeRateDTO.Rate > 0
                 && exchangeRateDTO.Amount > 0;
         }
