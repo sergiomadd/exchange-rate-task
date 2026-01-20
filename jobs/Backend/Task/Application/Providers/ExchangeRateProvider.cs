@@ -34,6 +34,12 @@ namespace ExchangeRateUpdater.Application.Providers
             //Used foreach instead of linq to be able to log skipped invalid rates
             foreach (ExchangeRateDTO exchangeRateDTO in rates.Where(dto => currencies.Any(c => c.Code == dto.CurrencyCode)))
             {
+                //Skip rates where the currency equals the base currency
+                if (exchangeRateDTO.CurrencyCode == SupportedCurrencies.DefaultBaseCurrency.Code)
+                {
+                    _logger.LogInformation($"Skipped exchange rate for base currency {exchangeRateDTO.CurrencyCode}");
+                    continue;
+                }
                 if (IsExchangeRateDTOValid(exchangeRateDTO))
                 {
                     validRates.Add(ExchangeRateMapDTOToModel(exchangeRateDTO));
