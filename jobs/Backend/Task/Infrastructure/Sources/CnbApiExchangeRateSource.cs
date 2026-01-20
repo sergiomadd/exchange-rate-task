@@ -47,9 +47,9 @@ namespace ExchangeRateUpdater.Infrastructure.Sources
                         PropertyNameCaseInsensitive = true
                     });
 
-                if (daily == null)
+                if (daily == null || daily.Rates == null)
                 {
-                    throw new InvalidOperationException("Deserialized exchange rate data is null");
+                    throw new JsonException("Deserialized exchange rate data is null");
                 }
 
                 return daily.Rates.ToList();
