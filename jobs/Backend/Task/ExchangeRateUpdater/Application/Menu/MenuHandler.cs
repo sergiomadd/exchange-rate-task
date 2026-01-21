@@ -26,7 +26,7 @@ namespace ExchangeRateUpdater.Application.Menu
 
             public async Task RunAsync()
             {
-                //Needed cause async method -> console initializes before app sometimes
+                //Needed cause main async method -> console initializes before app sometimes
                 Console.WriteLine("Starting Exchange Rate Updater...");
                 Console.WriteLine("Press Enter to continue...");
                 Console.ReadLine();
@@ -38,6 +38,7 @@ namespace ExchangeRateUpdater.Application.Menu
                     Console.Clear();
                     Console.WriteLine("=== Exchange Rate Updater ===");
                     Console.WriteLine("[1] Get latest exchange rates");
+                    Console.WriteLine("[2] Get exchange rates for a date");
                     Console.WriteLine("[0] Exit");
                     Console.Write("Choose an option: ");
 
@@ -50,6 +51,10 @@ namespace ExchangeRateUpdater.Application.Menu
                         case "1":
                             await GetLatestExchangeRates();
                             actionExecuted = true;
+                            break;
+
+                        case "2":
+                            actionExecuted = await GetDateExchangeRates();
                             break;
 
                         case "0":
@@ -95,6 +100,48 @@ namespace ExchangeRateUpdater.Application.Menu
                 {
                     _logger.LogError($"Could not retrieve exchange rates: {e.Message}");
                 }
+            }
+
+            private async Task<bool> GetDateExchangeRates()
+            {
+                Console.Write("Enter date (yyyy-MM-dd) or 'exit' to go back to menu: ");
+                string date = Console.ReadLine()!;
+
+                while (!DateValidator.ValidateDate(date))
+                {
+                    Console.Write("Enter date (yyyy-MM-dd) or 'exit' to go back to menu: ");
+                    date = Console.ReadLine()!;
+                    if (date.ToLower() == "exit")
+                    {
+                        return false;
+                    }
+                }
+
+                _logger.LogInformation($"Getting exchange rates for {date}...");
+
+                try
+                {
+                    IEnumerable<Currency> currencies = SupportedCurrencies.All;
+                    IEnumerable<ExchangeRate> rates = await _exchangeRateProvider.GetExchangeRatesFromDay(SupportedCurrencies.All, date);
+
+                    if (rates == null || rates.Count() <= 0)
+                    {
+                        _logger.LogWarning($"No exchange rates were retrieved for {date}");
+                    }
+                    else
+                    {
+                        _logger.LogInformation($"Successfully retrieved {rates.Count()} exchange rates for {date}:");
+                        foreach (ExchangeRate rate in rates)
+                        {
+                            _logger.LogInformation(rate.ToString());
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError($"Could not retrieve exchange rates: {e.Message}");
+                }
+                return true;
             }
         }
     }
