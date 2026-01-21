@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace ExchangeRateUpdater.Application.DTOs
 {
-    public class DailyExchangeRatesDTO
+    public record DailyExchangeRatesDTO
     {
-        public IEnumerable<ExchangeRateDTO> Rates { get; set; }
+        public IEnumerable<ExchangeRateDTO> Rates { get; init; }
     }
 }

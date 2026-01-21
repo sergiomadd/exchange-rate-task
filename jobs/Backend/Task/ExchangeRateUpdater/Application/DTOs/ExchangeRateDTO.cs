@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 
 namespace ExchangeRateUpdater.Application.DTOs
 {
-    public class ExchangeRateDTO
+    public record ExchangeRateDTO
     {
-        public DateTime ValidFor { get; set; }
-        public int Order { get; set; }
-        public string Country { get; set; }
-        public string Currency { get; set; }
-        public int Amount { get; set; }
-        public string CurrencyCode { get; set; }
-        public decimal Rate { get; set; }
+        public DateTime ValidFor { get; init; }
+        public int Order { get; init; }
+        public string Country { get; init; }
+        public string Currency { get; init; }
+        public int Amount { get; init; }
+        public string CurrencyCode { get; init; }
+        public decimal Rate { get; init; }
     }
 }
