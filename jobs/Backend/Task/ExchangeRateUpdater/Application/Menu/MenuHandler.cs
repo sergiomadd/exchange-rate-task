@@ -39,6 +39,7 @@ namespace ExchangeRateUpdater.Application.Menu
                     Console.WriteLine("=== Exchange Rate Updater ===");
                     Console.WriteLine("[1] Get latest exchange rates");
                     Console.WriteLine("[2] Get exchange rates for a date");
+                    Console.WriteLine("[3] Comapre exchange rates for 2 dates");
                     Console.WriteLine("[0] Exit");
                     Console.Write("Choose an option: ");
 
@@ -55,6 +56,10 @@ namespace ExchangeRateUpdater.Application.Menu
 
                         case "2":
                             actionExecuted = await GetDateExchangeRates();
+                            break;
+
+                        case "3":
+                            actionExecuted = await GetComparedExchangeRates();
                             break;
 
                         case "0":
@@ -143,6 +148,67 @@ namespace ExchangeRateUpdater.Application.Menu
                 }
                 return true;
             }
+
+            private async Task<bool> GetComparedExchangeRates()
+            {
+                Console.Write("Enter first date (yyyy-MM-dd) or 'exit' to go back to menu: ");
+                string firstDate = Console.ReadLine()!;
+
+                while (!DateValidator.ValidateDate(firstDate))
+                {
+                    Console.Write("Enter first date (yyyy-MM-dd) or 'exit' to go back to menu: ");
+                    firstDate = Console.ReadLine()!;
+                    if (firstDate.ToLower() == "exit")
+                    {
+                        return false;
+                    }
+                }
+
+                Console.WriteLine($"First date loaded - {firstDate}!");
+
+                Console.Write("Enter second date (yyyy-MM-dd) or 'exit' to go back to menu: ");
+                string secondDate = Console.ReadLine()!;
+
+                while (!DateValidator.ValidateDate(secondDate))
+                {
+                    Console.Write("Enter second date (yyyy-MM-dd) or 'exit' to go back to menu: ");
+                    secondDate = Console.ReadLine()!;
+                    if (secondDate.ToLower() == "exit")
+                    {
+                        return false;
+                    }
+                }
+
+                Console.WriteLine($"Second date loaded - {firstDate}!");
+
+                Console.WriteLine($"Getting exchange rates comparison for {firstDate} - {secondDate}...");
+
+                try
+                {
+                    IEnumerable<Currency> currencies = SupportedCurrencies.All;
+                    IEnumerable<ExchangeRateDifference> rates = await _exchangeRateProvider.CompareExchangeRatesBetweenDates(SupportedCurrencies.All, firstDate, secondDate);
+
+                    if (rates == null || rates.Count() <= 0)
+                    {
+                        Console.WriteLine($"No exchange rate differences were obtained from {firstDate} to {secondDate}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Successfully retrieved {rates.Count()} exchange rate differences");
+                        Console.WriteLine($"from {firstDate} to {secondDate}:");
+                        foreach (ExchangeRateDifference rate in rates)
+                        {
+                            Console.WriteLine(rate.ToString());
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError($"Could not retrieve exchange rates: {e.Message}");
+                }
+                return true;
+            }
+
         }
     }
 
