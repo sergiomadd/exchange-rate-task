@@ -32,6 +32,12 @@ namespace ExchangeRateUpdater.Application.Providers
             return ProcessExchangeRates(currencies, rates);
         }
 
+        public async Task<IEnumerable<ExchangeRate>> GetExchangeRatesFromDay(IEnumerable<Currency> currencies, string date)
+        {
+            IEnumerable<ExchangeRateDTO> rates = await _source.GetDailyExchangeRates(date);
+            return ProcessExchangeRates(currencies, rates);
+        }
+
         private IEnumerable<ExchangeRate> ProcessExchangeRates(IEnumerable<Currency> currencies, IEnumerable<ExchangeRateDTO> rates)
         {
             List<ExchangeRate> validRates = new List<ExchangeRate>();
