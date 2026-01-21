@@ -32,11 +32,14 @@ namespace ExchangeRateUpdater.Infrastructure.Sources
             _httpClient = httpClient;
         }
 
-        public async Task<IEnumerable<ExchangeRateDTO>> GetDailyExchangeRates()
+        //Date is assumed to be validated
+        public async Task<IEnumerable<ExchangeRateDTO>> GetDailyExchangeRates(string date = null)
         {
             try
             {
-                var response = await _httpClient.GetAsync(_options.DailyRatesPath);
+                string requestURL = date != null ? $"{_options.BaseUrl}exrates/daily?date={date}&lang=EN" : _options.DailyRatesPath;
+
+                var response = await _httpClient.GetAsync(requestURL);
                 response.EnsureSuccessStatusCode();
 
                 var json = await response.Content.ReadAsStringAsync();

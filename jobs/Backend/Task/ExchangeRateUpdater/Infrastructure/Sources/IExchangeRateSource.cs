@@ -10,6 +10,6 @@ namespace ExchangeRateUpdater.Infrastructure.Sources
 {
     public interface IExchangeRateSource
     {
-        Task<IEnumerable<ExchangeRateDTO>> GetDailyExchangeRates();
+        Task<IEnumerable<ExchangeRateDTO>> GetDailyExchangeRates(string date = null);
     }
 }
