@@ -1,4 +1,5 @@
-﻿using ExchangeRateUpdater.Application.Providers;
+﻿using ExchangeRateUpdater.Application.Menu.ExchangeRateUpdater.Application.Menu;
+using ExchangeRateUpdater.Application.Providers;
 using ExchangeRateUpdater.Core.Entities;
 using ExchangeRateUpdater.Data;
 using ExchangeRateUpdater.Infrastructure.Options;
@@ -50,41 +51,14 @@ namespace ExchangeRateUpdater
 
                 services.AddScoped<IExchangeRateSource>(sp => sp.GetRequiredService<CnbApiExchangeRateSource>());
                 services.AddTransient<IExchangeRateProvider, ExchangeRateProvider>();
+                services.AddScoped<MenuHandler>();
             })
             .Build();
 
-            var loggerFactory = host.Services.GetRequiredService<ILoggerFactory>();
-            var logger = loggerFactory.CreateLogger("ExchangeRateUpdater");
-            logger.LogInformation("Getting lastest exchange rates...");
-
             using var scope = host.Services.CreateScope();
-            var services = scope.ServiceProvider;
-            IExchangeRateProvider exchangeRateProvider = services.GetRequiredService<IExchangeRateProvider>();
+            var menu = scope.ServiceProvider.GetRequiredService<MenuHandler>();
 
-            try
-            {
-                IEnumerable<Currency> currencies = SupportedCurrencies.All;
-                IEnumerable<ExchangeRate> rates = await exchangeRateProvider.GetExchangeRates(currencies);
-
-                if (rates == null || rates.Count() <= 0)
-                {
-                    logger.LogWarning("No exchange rates were retrieved.");
-                }
-                else
-                {
-                    logger.LogInformation($"Successfully retrieved {rates.Count()} exchange rates:");
-                    foreach (ExchangeRate rate in rates)
-                    {
-                        logger.LogInformation(rate.ToString());
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                logger.LogError($"Could not retrieve exchange rates: {e.Message}");
-            }
-
-            Console.ReadLine();
+            await menu.RunAsync();
 
             await host.StopAsync();
         }
