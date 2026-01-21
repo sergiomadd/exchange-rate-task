@@ -222,5 +222,241 @@ namespace ExchangeRateUpdater.Tests.UnitTests
             // Assert
             Assert.Empty(result);
         }
+
+        //CompareExchangeRatesBetweenDates
+
+        [Fact]
+        public async Task CompareExchangeRatesBetweenDates_ReturnsDifferences_ForMatchingCurrencies()
+        {
+            // Arrange
+            var dateA = "2020-01-01";
+            var dateB = "2020-01-02";
+
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(dateA)).ReturnsAsync(ExchangeRateProviderTestData.ValidRates);
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(dateB)).ReturnsAsync(ExchangeRateProviderTestData.ValidRates);
+
+            var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
+
+            var currencies = new[]
+            {
+                new Currency("USD"),
+                new Currency("EUR")
+            };
+
+            // Act
+            var result = (await provider.CompareExchangeRatesBetweenDates(currencies, dateA, dateB)).ToList();
+
+            // Assert
+            Assert.Equal(2, result.Count);
+
+            var usd = result.Single(r => r.TargetCurrency.Code == "USD");
+            Assert.Equal(22, usd.FirstDateRate);
+            Assert.Equal(22, usd.SecondDateRate);
+            Assert.Equal(0, usd.Difference);
+        }
+
+        [Fact]
+        public async Task CompareExchangeRatesBetweenDates_ReturnsDifferences_ForMatchingCurrencies_WithRateDifference()
+        {
+            // Arrange
+            var dateA = "2015-01-01";
+            var dateB = "2020-01-01";
+
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(dateA)).ReturnsAsync(ExchangeRateProviderTestData.ValidRates);
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(dateB)).ReturnsAsync(ExchangeRateProviderTestData.ValidRatesGreater);
+
+            var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
+
+            var currencies = new[]
+            {
+                new Currency("USD"),
+                new Currency("EUR")
+            };
+
+            // Act
+            var result = (await provider.CompareExchangeRatesBetweenDates(currencies, dateA, dateB)).ToList();
+
+            // Assert
+            Assert.Equal(2, result.Count);
+
+            var usd = result.Single(r => r.TargetCurrency.Code == "USD");
+            Assert.Equal(22, usd.FirstDateRate);
+            Assert.Equal(30, usd.SecondDateRate);
+            Assert.Equal(8, usd.Difference);
+            Assert.Equal(Math.Round((30m - 22m) / 22m * 100, 2), usd.PercentageDifference);
+
+            var eur = result.Single(r => r.TargetCurrency.Code == "EUR");
+            Assert.Equal(25, eur.FirstDateRate);
+            Assert.Equal(32, eur.SecondDateRate);
+            Assert.Equal(7, eur.Difference);
+            Assert.Equal(Math.Round((32m - 25m) / 25m * 100, 2), eur.PercentageDifference);
+        }
+
+        [Fact]
+        public async Task CompareExchangeRatesBetweenDates_ReturnsDifferences_ForMatchingCurrencies_WithNegativeRateDifference()
+        {
+            // Arrange
+            var dateA = "2020-01-01";
+            var dateB = "2015-01-01";
+
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(dateA)).ReturnsAsync(ExchangeRateProviderTestData.ValidRatesGreater);
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(dateB)).ReturnsAsync(ExchangeRateProviderTestData.ValidRates);
+
+            var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
+
+            var currencies = new[]
+            {
+                new Currency("USD"),
+                new Currency("EUR")
+            };
+
+            // Act
+            var result = (await provider.CompareExchangeRatesBetweenDates(currencies, dateA, dateB)).ToList();
+
+            // Assert
+            Assert.Equal(2, result.Count);
+
+            var usd = result.Single(r => r.TargetCurrency.Code == "USD");
+            Assert.Equal(30, usd.FirstDateRate);
+            Assert.Equal(22, usd.SecondDateRate);
+            Assert.Equal(-8, usd.Difference);
+            Assert.Equal(Math.Round((22m - 30m) / 30m * 100, 2), usd.PercentageDifference);
+
+            var eur = result.Single(r => r.TargetCurrency.Code == "EUR");
+            Assert.Equal(32, eur.FirstDateRate);
+            Assert.Equal(25, eur.SecondDateRate);
+            Assert.Equal(-7, eur.Difference);
+            Assert.Equal(Math.Round((25m - 32m) / 32m * 100, 2), eur.PercentageDifference);
+        }
+
+        [Fact]
+        public async Task CompareExchangeRatesBetweenDates_ReturnsEmpty_WhenFirstDateHasNoData()
+        {
+            // Arrange
+            var dateA = "2020-01-01";
+            var dateB = "2020-01-02";
+
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(dateA)).ReturnsAsync(new List<ExchangeRateDTO>());
+
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(dateB)).ReturnsAsync(ExchangeRateProviderTestData.ValidRates);
+
+            var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
+
+            // Act
+            var result = await provider.CompareExchangeRatesBetweenDates(SupportedCurrencies.All, dateA, dateB);
+
+            // Assert
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public async Task CompareExchangeRatesBetweenDates_ReturnsEmpty_WhenSecondDateHasNoData()
+        {
+            // Arrange
+            var dateA = "2020-01-01";
+            var dateB = "2020-01-02";
+
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(dateA)).ReturnsAsync(ExchangeRateProviderTestData.ValidRates);
+
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(dateB)).ReturnsAsync(new List<ExchangeRateDTO>());
+
+            var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
+
+            // Act
+            var result = await provider.CompareExchangeRatesBetweenDates(SupportedCurrencies.All, dateA, dateB);
+
+            // Assert
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public async Task CompareExchangeRatesBetweenDates_SkipsInvalidRates()
+        {
+            // Arrange
+            var dateA = "2020-01-01";
+            var dateB = "2020-01-02";
+
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(dateA)).ReturnsAsync(ExchangeRateProviderTestData.WithInvalidRate);
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(dateB)).ReturnsAsync(ExchangeRateProviderTestData.ValidRates);
+
+            var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
+
+            var currencies = new[]
+            {
+                new Currency("USD"),
+                new Currency("EUR")
+            };
+
+            // Act
+            var result = (await provider.CompareExchangeRatesBetweenDates(currencies, dateA, dateB)).ToList();
+
+            // Assert
+            Assert.Single(result);
+            Assert.Equal("EUR", result[0].TargetCurrency.Code);
+        }
+
+        [Fact]
+        public async Task CompareExchangeRatesBetweenDates_NormalizesRates_WhenAmountGreaterThanOne()
+        {
+            // Arrange
+            var dateA = "2020-01-01";
+            var dateB = "2020-01-02";
+
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(dateA)).ReturnsAsync(ExchangeRateProviderTestData.WithAmountGreaterThanOne);
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(dateB)).ReturnsAsync(ExchangeRateProviderTestData.ValidRates);
+
+            var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
+
+            var currencies = new[] { new Currency("USD") };
+
+            // Act
+            var result = (await provider.CompareExchangeRatesBetweenDates(currencies, dateA, dateB)).Single();
+
+            // Assert
+            Assert.Equal(22, result.FirstDateRate);
+            Assert.Equal(22, result.SecondDateRate);
+            Assert.Equal(0, result.Difference);
+        }
+
+        [Fact]
+        public async Task CompareExchangeRatesBetweenDates_SkipsBaseCurrency()
+        {
+            // Arrange
+            var dateA = "2020-01-01";
+            var dateB = "2020-01-02";
+
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(dateA)).ReturnsAsync(ExchangeRateProviderTestData.WithBaseCurrency);
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(dateB)).ReturnsAsync(ExchangeRateProviderTestData.WithBaseCurrency);
+
+            var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
+
+            var currencies = new[]
+            {
+                new Currency("CZK"),
+                new Currency("USD")
+            };
+
+            // Act
+            var result = (await provider.CompareExchangeRatesBetweenDates(currencies, dateA, dateB)).ToList();
+
+            // Assert
+            Assert.Single(result);
+            Assert.Equal("USD", result[0].TargetCurrency.Code);
+        }
+
+        [Fact]
+        public async Task CompareExchangeRatesBetweenDates_Throws_WhenSourceThrows()
+        {
+            // Arrange
+            var dateA = "2020-01-01";
+            var dateB = "2020-01-02";
+
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(dateA)).ThrowsAsync(new ExchangeRateSourceException("Failure"));
+
+            var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
+
+            // Act & Assert
+            await Assert.ThrowsAsync<ExchangeRateSourceException>(() => provider.CompareExchangeRatesBetweenDates(new[] { new Currency("USD") }, dateA, dateB));
+        }
     }
 }

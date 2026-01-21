@@ -25,6 +25,22 @@ namespace ExchangeRateUpdater.Tests.UnitTests.Data
             }
         };
 
+        public static IEnumerable<ExchangeRateDTO> ValidRatesGreater => new[]
+{
+            new ExchangeRateDTO
+            {
+                CurrencyCode = "USD",
+                Rate = 30,
+                Amount = 1
+            },
+            new ExchangeRateDTO
+            {
+                CurrencyCode = "EUR",
+                Rate = 32,
+                Amount = 1
+            }
+        };
+
         public static IEnumerable<ExchangeRateDTO> WithInvalidRate => new[]
         {
             new ExchangeRateDTO
