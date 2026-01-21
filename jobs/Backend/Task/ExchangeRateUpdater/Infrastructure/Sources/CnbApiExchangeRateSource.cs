@@ -14,6 +14,9 @@ using System.Threading.Tasks;
 
 namespace ExchangeRateUpdater.Infrastructure.Sources
 {
+    /// <summary>
+    /// Retrieves exchange rates from the CNB (Czech National Bank) API using a HTTP client.
+    /// </summary>
     public class CnbApiExchangeRateSource : IExchangeRateSource
     {
         private readonly ILogger<CnbApiExchangeRateSource> _logger;
@@ -33,6 +36,22 @@ namespace ExchangeRateUpdater.Infrastructure.Sources
         }
 
         //Date is assumed to be validated
+
+
+
+        /// <summary>
+        /// Retrieves daily exchange rates from the CNB API
+        /// </summary>
+        /// <param name="date">
+        /// Optional date in (yyyy-MM-dd) format. If not provided, retrieves the latest available rates
+        /// Date is assumed to be already validated
+        /// </param>
+        /// <returns>
+        /// A collection of ExchangeRateDTO objects representing exchange rates for the requested date
+        /// </returns>
+        /// <exception cref="ExchangeRateSourceException">
+        /// Thrown when the CNB API request fails, times out, or the response cannot be deserialized
+        /// </exception>
         public async Task<IEnumerable<ExchangeRateDTO>> GetDailyExchangeRates(string date = null)
         {
             try

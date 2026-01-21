@@ -8,6 +8,13 @@ namespace ExchangeRateUpdater.Application.Validators
 {
     public static class DateValidator
     {
+        /// <summary>
+        /// Validates a string to ensure it is a valid date in the format (yyyy-MM-dd) and is not a future date
+        /// </summary>
+        /// <param name="input">The date string to validate.</param>
+        /// <returns>
+        /// True if the input is a valid date, false otherwise
+        /// </returns>
         public static bool ValidateDate(string input)
         {
             DateTime date;

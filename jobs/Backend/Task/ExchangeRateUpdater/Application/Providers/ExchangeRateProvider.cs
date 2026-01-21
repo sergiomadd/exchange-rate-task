@@ -32,12 +32,31 @@ namespace ExchangeRateUpdater.Application.Providers
             return ProcessExchangeRates(currencies, rates);
         }
 
+        /// <summary>
+        /// Retrieves exchange rates for the specified currencies on a given date.
+        /// </summary>
+        /// <param name="currencies">Currencies to retrieve exchange rates for.</param>
+        /// <param name="date">Date in yyyy-MM-dd format. Assumed to be validated.</param>
+        /// <returns>
+        /// A collection of validated and normalized ExchangeRate objects for the given date.
+        /// </returns>
         public async Task<IEnumerable<ExchangeRate>> GetExchangeRatesFromDay(IEnumerable<Currency> currencies, string date)
         {
             IEnumerable<ExchangeRateDTO> rates = await _source.GetDailyExchangeRates(date);
             return ProcessExchangeRates(currencies, rates);
         }
 
+        /// <summary>
+        /// Compares exchange rates between two different dates and calculates
+        /// value and percentage differences.
+        /// </summary>
+        /// <param name="currencies">Currencies to compare.</param>
+        /// <param name="dateA">First comparison date (yyyy-MM-dd).</param>
+        /// <param name="dateB">Second comparison date (yyyy-MM-dd).</param>
+        /// <returns>
+        /// A collection of ExchangeRateDifference representing the difference
+        /// in rates between the two dates.
+        /// </returns>
         public async Task<IEnumerable<ExchangeRateDifference>> CompareExchangeRatesBetweenDates(IEnumerable<Currency> currencies, string dateA, string dateB)
         {
             IEnumerable<ExchangeRateDTO> ratesA = await _source.GetDailyExchangeRates(dateA);
@@ -45,6 +64,15 @@ namespace ExchangeRateUpdater.Application.Providers
             return CompareExchangeRates(currencies, ratesA, ratesB);
         }
 
+        /// <summary>
+        /// Validates and normalizes raw ExchangeRateDTO objects into domain 
+        /// ExchangeRate objects that are included in currencies.
+        /// </summary>
+        /// <param name="currencies">Currencies to include.</param>
+        /// <param name="rates">Raw exchange rate DTOs retrieved from the source.</param>
+        /// <returns>
+        /// A collection of valid and normalized ExchangeRate objects.
+        /// </returns>
         private IEnumerable<ExchangeRate> ProcessExchangeRates(IEnumerable<Currency> currencies, IEnumerable<ExchangeRateDTO> rates)
         {
             List<ExchangeRate> validRates = new List<ExchangeRate>();
@@ -75,6 +103,16 @@ namespace ExchangeRateUpdater.Application.Providers
             return validRates;
         }
 
+        /// <summary>
+        /// Compares exchange rates between two dates and calculates value and percentage differences.
+        /// Dates are expected to be different and validated.
+        /// </summary>
+        /// <param name="currencies">Currencies to compare.</param>
+        /// <param name="ratesA">Exchange rates for the first date.</param>
+        /// <param name="ratesB">Exchange rates for the second date.</param>
+        /// <returns>
+        /// A list of ExchangeRateDifference objects.
+        /// </returns>
         private List<ExchangeRateDifference> CompareExchangeRates(IEnumerable<Currency> currencies, IEnumerable<ExchangeRateDTO> ratesA, IEnumerable<ExchangeRateDTO> ratesB)
         {
             List<ExchangeRateDifference> diffs = new List<ExchangeRateDifference>();
@@ -135,14 +173,19 @@ namespace ExchangeRateUpdater.Application.Providers
             return diffs;
         }
 
-
+        /// <summary>
+        /// Validates that an ExchangeRateDTO contains usable data.
+        /// </summary>
         private static bool IsExchangeRateDTOValid(ExchangeRateDTO exchangeRateDTO)
         {
             return !string.IsNullOrWhiteSpace(exchangeRateDTO.CurrencyCode)
                 && exchangeRateDTO.Rate > 0
                 && exchangeRateDTO.Amount > 0;
         }
-        
+
+        /// <summary>
+        /// Maps a valid ExchangeRateDTO to a normalized domain ExchangeRate.
+        /// </summary>
         private static ExchangeRate ExchangeRateMapDTOToModel(ExchangeRateDTO exchangeRateDTO)
         {
             //Nomalize rate incase amount given is greater than 1
