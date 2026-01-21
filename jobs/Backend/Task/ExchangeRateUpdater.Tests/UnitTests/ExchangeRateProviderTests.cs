@@ -2,6 +2,7 @@
 using ExchangeRateUpdater.Application.Providers;
 using ExchangeRateUpdater.Core.Entities;
 using ExchangeRateUpdater.Core.Exceptions;
+using ExchangeRateUpdater.Data;
 using ExchangeRateUpdater.Infrastructure.Sources;
 using ExchangeRateUpdater.Tests.UnitTests.Data;
 using Microsoft.Extensions.Logging;
@@ -30,7 +31,7 @@ namespace ExchangeRateUpdater.Tests.UnitTests
         public async Task GetExchangeRates_ReturnsOnlyRatesForRequestedCurrencies()
         {
             // Arrange
-            _sourceMock.Setup(s => s.GetDailyExchangeRates()).ReturnsAsync(ExchangeRateProviderTestData.ValidRates);
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(null)).ReturnsAsync(ExchangeRateProviderTestData.ValidRates);
 
             var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
 
@@ -48,7 +49,7 @@ namespace ExchangeRateUpdater.Tests.UnitTests
         public async Task GetExchangeRates_IgnoresRequestedCurrenciesNotInSource()
         {
             // Arrange
-            _sourceMock.Setup(s => s.GetDailyExchangeRates()).ReturnsAsync(ExchangeRateProviderTestData.ValidRates);
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(null)).ReturnsAsync(ExchangeRateProviderTestData.ValidRates);
 
             var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
 
@@ -70,7 +71,7 @@ namespace ExchangeRateUpdater.Tests.UnitTests
         public async Task GetExchangeRates_SkipsInvalidExchangeRateDTOs()
         {
             // Arrange
-            _sourceMock.Setup(s => s.GetDailyExchangeRates()).ReturnsAsync(ExchangeRateProviderTestData.WithInvalidRate);
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(null)).ReturnsAsync(ExchangeRateProviderTestData.WithInvalidRate);
 
             var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
 
@@ -92,7 +93,7 @@ namespace ExchangeRateUpdater.Tests.UnitTests
         public async Task GetExchangeRates_NormalizesRate_WhenAmountIsGreaterThanOne()
         {
             // Arrange
-            _sourceMock.Setup(s => s.GetDailyExchangeRates()).ReturnsAsync(ExchangeRateProviderTestData.WithAmountGreaterThanOne);
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(null)).ReturnsAsync(ExchangeRateProviderTestData.WithAmountGreaterThanOne);
 
             var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
 
@@ -107,7 +108,7 @@ namespace ExchangeRateUpdater.Tests.UnitTests
         public async Task GetExchangeRates_SkipsNullExchangeRateDTOs()
         {
             // Arrange
-            _sourceMock.Setup(s => s.GetDailyExchangeRates()).ReturnsAsync(ExchangeRateProviderTestData.WithNullAndInvalidEntries);
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(null)).ReturnsAsync(ExchangeRateProviderTestData.WithNullAndInvalidEntries);
 
             var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
 
@@ -123,7 +124,7 @@ namespace ExchangeRateUpdater.Tests.UnitTests
         public async Task GetExchangeRates_SkipsBaseCurrencyDTOs()
         {
             // Arrange
-            _sourceMock.Setup(s => s.GetDailyExchangeRates()).ReturnsAsync(ExchangeRateProviderTestData.WithBaseCurrency);
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(null)).ReturnsAsync(ExchangeRateProviderTestData.WithBaseCurrency);
 
             var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
 
@@ -146,12 +147,80 @@ namespace ExchangeRateUpdater.Tests.UnitTests
         public async Task GetExchangeRates_Throws_WhenSourceThrows()
         {
             // Arrange
-            _sourceMock.Setup(s => s.GetDailyExchangeRates()).ThrowsAsync(new ExchangeRateSourceException("Failure"));
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(null)).ThrowsAsync(new ExchangeRateSourceException("Failure"));
 
             var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
 
             // Act & Assert
             await Assert.ThrowsAsync<ExchangeRateSourceException>(() => provider.GetExchangeRates(new[] { new Currency("USD") }));
+        }
+
+        //GetExchangeRatesFromDay
+
+        [Fact]
+        public async Task GetExchangeRatesFromDay_ReturnsRatesForGivenDate()
+        {
+            // Arrange
+            var testDate = "2020-02-12";
+
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(testDate)).ReturnsAsync(ExchangeRateProviderTestData.ValidRates);
+
+            var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
+
+            var currencies = new[] { new Currency("USD") };
+
+            // Act
+            var result = (await provider.GetExchangeRatesFromDay(currencies, testDate)).ToList();
+
+            // Assert
+            Assert.Single(result);
+            Assert.Equal("USD", result[0].TargetCurrency.Code);
+        }
+
+        [Fact]
+        public async Task GetExchangeRatesFromDay_Throws_WhenDateFormatInvalid()
+        {
+            // Arrange
+            var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
+            string invalidDate = "2020/01/01"; // wrong format
+
+            // Act & Assert
+            // Date format itself is not validated in provider, so mocking source to throw
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(invalidDate)).ThrowsAsync(new ExchangeRateSourceException("Invalid date format"));
+
+            await Assert.ThrowsAsync<ExchangeRateSourceException>(() =>
+                provider.GetExchangeRatesFromDay(new[] { new Currency("USD") }, invalidDate));
+        }
+
+        [Fact]
+        public async Task GetExchangeRatesFromDay_Throws_WhenDateInFuture()
+        {
+            // Arrange
+            var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
+            string futureDate = DateTime.Today.AddDays(1).ToString("yyyy-MM-dd");
+
+            // Act & Assert
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(futureDate))
+                .ThrowsAsync(new ExchangeRateSourceException("Date cannot be in the future"));
+
+            await Assert.ThrowsAsync<ExchangeRateSourceException>(() =>
+                provider.GetExchangeRatesFromDay(new[] { new Currency("USD") }, futureDate));
+        }
+
+        [Fact]
+        public async Task GetExchangeRatesFromDay_ReturnsEmpty_WhenNoDataForTooOldDate()
+        {
+            // Arrange
+            var provider = new ExchangeRateProvider(_loggerMock.Object, _sourceMock.Object);
+            string oldDate = "1900-01-01";
+
+            _sourceMock.Setup(s => s.GetDailyExchangeRates(oldDate)).ReturnsAsync(new List<ExchangeRateDTO>()); // No data
+
+            // Act
+            var result = (await provider.GetExchangeRatesFromDay(new[] { new Currency("USD") }, oldDate)).ToList();
+
+            // Assert
+            Assert.Empty(result);
         }
     }
 }
