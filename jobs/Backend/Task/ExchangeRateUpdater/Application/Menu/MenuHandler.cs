@@ -173,6 +173,11 @@ namespace ExchangeRateUpdater.Application.Menu
                 {
                     Console.Write("Enter second date (yyyy-MM-dd) or 'exit' to go back to menu: ");
                     secondDate = Console.ReadLine()!;
+                    if (firstDate == secondDate)
+                    {
+                        Console.WriteLine("Second date can not be same as first date");
+                        continue;
+                    }
                     if (secondDate.ToLower() == "exit")
                     {
                         return false;
