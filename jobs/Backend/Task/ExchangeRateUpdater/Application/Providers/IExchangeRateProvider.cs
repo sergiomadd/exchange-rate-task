@@ -11,5 +11,6 @@ namespace ExchangeRateUpdater.Application.Providers
     {
         public Task<IEnumerable<ExchangeRate>> GetExchangeRates(IEnumerable<Currency> currencies);
         public Task<IEnumerable<ExchangeRate>> GetExchangeRatesFromDay(IEnumerable<Currency> currencies, string date);
+        public Task<IEnumerable<ExchangeRateDifference>> CompareExchangeRatesBetweenDates(IEnumerable<Currency> currencies, string dateA, string dateB);
     }
 }
