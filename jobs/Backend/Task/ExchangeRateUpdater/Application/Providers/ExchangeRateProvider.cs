@@ -29,8 +29,17 @@ namespace ExchangeRateUpdater.Application.Providers
         public async Task<IEnumerable<ExchangeRate>> GetExchangeRates(IEnumerable<Currency> currencies)
         {
             IEnumerable<ExchangeRateDTO> rates = await _source.GetDailyExchangeRates();
-            List<ExchangeRate> validRates = new List<ExchangeRate>();
+            return ProcessExchangeRates(currencies, rates);
+        }
 
+        private IEnumerable<ExchangeRate> ProcessExchangeRates(IEnumerable<Currency> currencies, IEnumerable<ExchangeRateDTO> rates)
+        {
+            List<ExchangeRate> validRates = new List<ExchangeRate>();
+            if (rates == null || !rates.Any())
+            {
+                _logger.LogWarning("No exchange rates retrieved from source.");
+                return validRates;
+            }
             //Used foreach instead of linq to be able to log skipped invalid rates
             foreach (ExchangeRateDTO exchangeRateDTO in rates.Where(dto => dto != null && currencies.Any(c => c.Code == dto.CurrencyCode)))
             {
