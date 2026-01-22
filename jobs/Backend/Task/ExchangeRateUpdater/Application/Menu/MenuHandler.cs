@@ -40,7 +40,7 @@ namespace ExchangeRateUpdater.Application.Menu
                     Console.WriteLine("=== Exchange Rate Updater ===");
                     Console.WriteLine("[1] Get latest exchange rates");
                     Console.WriteLine("[2] Get exchange rates for a date");
-                    Console.WriteLine("[3] Comapre exchange rates for 2 dates");
+                    Console.WriteLine("[3] Compare exchange rates between 2 dates");
                     Console.WriteLine("[0] Exit");
                     Console.Write("Choose an option: ");
 

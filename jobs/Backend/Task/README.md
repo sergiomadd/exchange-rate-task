@@ -26,14 +26,14 @@ For logging I used `ILogger` and `System.Console` interchangeably, with separati
 - `System.Console` for user relevant logs and user interaction.
 #### MenuHandler
 I have added a console menu with a simple lifecycle loop for the user interaction layer. This way I separate the business logic from the user UI. It has these available programs:
-- `[1] Latest rates`
+- `[1] Get latest exchange rates`
 	- Displays the latest exchange rates that match the supported currencies
 	- Uses `ExchangeRateProvider.GetExchangeRates`
-- `[2] Rates for a specific date`
+- `[2] Get exchange rates for a date`
 	- Asks the user to input a date until its valid
 	- Displays exchange rates for the day that match the supported currencies
 	- Uses `ExchangeRateProvider.GetExchangeRatesFromDay`
-- `[3] Compare rates between two dates`
+- `[3] Compare exchange rates between 2 dates`
 	- Asks the user to input 2 dates one by one until they are valid
 	- Displays the calculated difference between the rates of the 2 dates
 	- Uses `ExchangeRateProvider.CompareExchangeRatesBetweenDates`
