@@ -81,23 +81,31 @@ namespace ExchangeRateUpdater.Application.Providers
                 _logger.LogWarning("No exchange rates retrieved from source.");
                 return validRates;
             }
-            //Used foreach instead of linq to be able to log skipped invalid rates
-            foreach (ExchangeRateDTO exchangeRateDTO in rates.Where(dto => dto != null && currencies.Any(c => c.Code == dto.CurrencyCode)))
+
+            HashSet<string> currencyCodes = new HashSet<string>(currencies.Select(c => c.Code), StringComparer.OrdinalIgnoreCase);
+
+            //Need foreach to be able to log skipped rates
+            foreach (ExchangeRateDTO exchangeRateDTO in rates)
             {
-                //Skip rates where the currency equals the base currency
+                if (exchangeRateDTO == null)
+                {
+                    continue;
+                }
+                if (!currencyCodes.Contains(exchangeRateDTO.CurrencyCode))
+                {
+                    continue;
+                }
                 if (exchangeRateDTO.CurrencyCode == SupportedCurrencies.DefaultBaseCurrency.Code)
                 {
                     _logger.LogInformation($"Skipped exchange rate for base currency {exchangeRateDTO.CurrencyCode}");
                     continue;
                 }
-                if (IsExchangeRateDTOValid(exchangeRateDTO))
-                {
-                    validRates.Add(ExchangeRateMapDTOToModel(exchangeRateDTO));
-                }
-                else
+                if (!IsExchangeRateDTOValid(exchangeRateDTO))
                 {
                     _logger.LogWarning($"Skipped invalid exchange rate for Currency={exchangeRateDTO.CurrencyCode} with Amount={exchangeRateDTO.Amount}, Rate={exchangeRateDTO.Rate}");
+                    continue;
                 }
+                validRates.Add(ExchangeRateMapDTOToModel(exchangeRateDTO));
             }
 
             return validRates;
@@ -117,17 +125,21 @@ namespace ExchangeRateUpdater.Application.Providers
         {
             List<ExchangeRateDifference> diffs = new List<ExchangeRateDifference>();
 
-            if (ratesA == null || !ratesA.Any())
+            if (ratesA == null || ratesB == null)
             {
-                _logger.LogWarning("No exchange rates retrieved for the first date.");
+                _logger.LogWarning("One or both exchange rate sources are null.");
                 return diffs;
             }
 
-            if (ratesB == null || !ratesB.Any())
-            {
-                _logger.LogWarning("No exchange rates retrieved for the second date.");
-                return diffs;
-            }
+            Dictionary<string, ExchangeRateDTO> ratesADict = ratesA
+                .Where(r => r != null)
+                .GroupBy(r => r.CurrencyCode)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            Dictionary<string, ExchangeRateDTO> ratesBDict = ratesB
+                .Where(r => r != null)
+                .GroupBy(r => r.CurrencyCode)
+                .ToDictionary(g => g.Key, g => g.First());
 
             foreach (Currency currency in currencies)
             {
@@ -137,37 +149,36 @@ namespace ExchangeRateUpdater.Application.Providers
                     continue;
                 }
 
-                ExchangeRateDTO rateADTO = ratesA.FirstOrDefault(r => r.CurrencyCode == currency.Code);
-                ExchangeRateDTO rateBDTO = ratesB.FirstOrDefault(r => r.CurrencyCode == currency.Code);
-
-                if (rateADTO == null || rateBDTO == null)
+                if (!ratesADict.TryGetValue(currency.Code, out var rateA))
                 {
-                    _logger.LogWarning($"Rate for {currency.Code} not found in first date.");
+                    _logger.LogWarning($"Rate for {currency.Code} not found on first date.");
                     continue;
                 }
-                if (rateBDTO == null)
+
+                if (!ratesBDict.TryGetValue(currency.Code, out var rateB))
                 {
                     _logger.LogWarning($"Rate for {currency.Code} not found in second date.");
                     continue;
                 }
 
-                if (!IsExchangeRateDTOValid(rateADTO))
+                if (!IsExchangeRateDTOValid(rateA))
                 {
                     _logger.LogWarning($"Skipped invalid rate for {currency.Code} on first date.");
                     continue;
                 }
-                if (!IsExchangeRateDTOValid(rateBDTO))
+
+                if (!IsExchangeRateDTOValid(rateB))
                 {
                     _logger.LogWarning($"Skipped invalid rate for {currency.Code} on second date.");
                     continue;
                 }
 
-                decimal rateA = rateADTO.Amount > 1 ? rateADTO.Rate / rateADTO.Amount : rateADTO.Rate;
-                decimal rateB = rateBDTO.Amount > 1 ? rateBDTO.Rate / rateBDTO.Amount : rateBDTO.Rate;
-                decimal diff = rateB - rateA;
-                decimal percentageDiff = rateA == 0 ? 0 : Math.Round((diff / rateA) * 100, 2);
+                decimal normalizedRateA = rateA.Amount > 1 ? rateA.Rate / rateA.Amount : rateA.Rate;
+                decimal normalizedRateB = rateB.Amount > 1 ? rateB.Rate / rateB.Amount: rateB.Rate;
+                decimal diff = normalizedRateB - normalizedRateA;
+                decimal percentageDiff = normalizedRateA == 0 ? 0 : Math.Round((diff / normalizedRateA) * 100, 2);
 
-                diffs.Add(new ExchangeRateDifference(SupportedCurrencies.DefaultBaseCurrency, currency, rateA, rateB, diff, percentageDiff));
+                diffs.Add(new ExchangeRateDifference(SupportedCurrencies.DefaultBaseCurrency, currency, normalizedRateA, normalizedRateB, diff, percentageDiff));
             }
 
             return diffs;
