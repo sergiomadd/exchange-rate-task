@@ -9,33 +9,17 @@ namespace ExchangeRateUpdater.Application.Menu
 {
     public static class ASCIIHelper
     {
-        public static string Load(string filePath)
+        public static string LoadFromAssets(string relativePath)
         {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(filePath))
-                {
-                    throw new ArgumentException("ASCII art file path cannot be null or empty.", nameof(filePath));
-                }
+            var fullPath = Path.Combine(AppContext.BaseDirectory, relativePath);
 
-                if (!File.Exists(filePath))
-                {
-                    throw new FileNotFoundException($"ASCII art file not found: {filePath}");
-                }
-
-                return File.ReadAllText(filePath);
-            }
-            catch(Exception e)
+            if (!File.Exists(fullPath))
             {
-                Console.WriteLine($"Unable to load ascii asset {filePath}");
+                Console.WriteLine($"Unable to load ascii asset {fullPath}");
+                return null;
             }
 
-            return null;
-        }
-
-        public static void Print(string filePath)
-        {
-            Console.WriteLine(Load(filePath));
+            return File.ReadAllText(fullPath);
         }
     }
 }

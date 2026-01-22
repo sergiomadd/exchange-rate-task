@@ -36,7 +36,7 @@ namespace ExchangeRateUpdater.Application.Menu
                 while (!exit)
                 {
                     Console.Clear();
-                    Console.WriteLine(ASCIIHelper.Load("Assets/ascii-cnb-title.txt"));
+                    Console.WriteLine(ASCIIHelper.LoadFromAssets("Assets/ascii-cnb-title.txt"));
                     Console.WriteLine("=== Exchange Rate Updater ===");
                     Console.WriteLine("[1] Get latest exchange rates");
                     Console.WriteLine("[2] Get exchange rates for a date");
