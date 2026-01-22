@@ -23,14 +23,7 @@ namespace ExchangeRateUpdater
         public static async Task Main(string[] args)
         {
             using var host = Host.CreateDefaultBuilder(args)
-            .ConfigureAppConfiguration((context, config) =>
-            {
-                config
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: false)
-                .AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json", optional: true)
-                .AddEnvironmentVariables();
-            })
+            .UseContentRoot(AppContext.BaseDirectory)
             .ConfigureLogging((context, logging) =>
             {
                 logging.ClearProviders();
