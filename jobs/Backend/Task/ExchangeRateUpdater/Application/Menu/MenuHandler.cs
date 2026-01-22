@@ -82,7 +82,7 @@ namespace ExchangeRateUpdater.Application.Menu
 
             private async Task GetLatestExchangeRates()
             {
-                _logger.LogInformation("Getting latest exchange rates...");
+                Console.WriteLine("Getting latest exchange rates...");
 
                 try
                 {
@@ -91,14 +91,14 @@ namespace ExchangeRateUpdater.Application.Menu
 
                     if (rates == null || rates.Count() <= 0)
                     {
-                        _logger.LogWarning("No exchange rates were retrieved.");
+                        Console.WriteLine("No exchange rates were retrieved.");
                     }
                     else
                     {
-                        _logger.LogInformation($"Successfully retrieved {rates.Count()} exchange rates:");
+                        Console.WriteLine($"Successfully retrieved {rates.Count()} exchange rates:");
                         foreach (ExchangeRate rate in rates)
                         {
-                            _logger.LogInformation(rate.ToString());
+                            Console.WriteLine(rate.ToString());
                         }
                     }
                 }
@@ -123,7 +123,7 @@ namespace ExchangeRateUpdater.Application.Menu
                     }
                 }
 
-                _logger.LogInformation($"Getting exchange rates for {date}...");
+                Console.WriteLine($"Getting exchange rates for {date}...");
 
                 try
                 {
@@ -132,14 +132,14 @@ namespace ExchangeRateUpdater.Application.Menu
 
                     if (rates == null || rates.Count() <= 0)
                     {
-                        _logger.LogWarning($"No exchange rates were retrieved for {date}");
+                        Console.WriteLine($"No exchange rates were retrieved for {date}");
                     }
                     else
                     {
-                        _logger.LogInformation($"Successfully retrieved {rates.Count()} exchange rates for {date}:");
+                        Console.WriteLine($"Successfully retrieved {rates.Count()} exchange rates for {date}:");
                         foreach (ExchangeRate rate in rates)
                         {
-                            _logger.LogInformation(rate.ToString());
+                            Console.WriteLine(rate.ToString());
                         }
                     }
                 }
